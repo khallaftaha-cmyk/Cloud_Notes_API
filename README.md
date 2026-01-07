@@ -1,129 +1,96 @@
-# =====================================================
-# CLOUD NOTES API
-# A Secure, Containerized Backend Architecture
-# =====================================================
+# cloud notes api
+# secure, containerized backend architecture
 
-# -----------------------------------------------------
-# PROJECT OVERVIEW
-# -----------------------------------------------------
-# The Cloud Notes API is a production-ready backend
-# solution designed for secure personal data management.
+# project overview
+# the cloud notes api is a backend solution designed for secure
+# personal data management.
 #
-# Built with FastAPI, this project demonstrates modern
-# backend engineering practices:
-# - Asynchronous web services
-# - Cryptographic security
-# - Database versioning
-# - Containerized deployment
-# -----------------------------------------------------
+# built with fastapi, this project demonstrates:
+# - asynchronous web services
+# - cryptographic security practices
+# - database versioning
+# - containerized deployment
 
 
-# =====================================================
-# CORE ENGINEERING PRINCIPLES
-# =====================================================
-# The architecture is based on four key pillars:
+# core engineering principles
+# the architecture is based on four pillars:
 #
-# 1. Type Safety
-#    - Strict schema validation using Pydantic
+# - type safety using pydantic
+# - stateless security with jwt
+# - persistent versioning via alembic
+# - environment parity using docker
+
+
+# asynchronous design
+# the system follows the asgi standard.
 #
-# 2. Stateless Security
-#    - JWT-based authentication
+# - powered by uvicorn and asyncio
+# - non-blocking request handling
+# - supports high concurrency
 #
-# 3. Persistent Versioning
-#    - Database migrations using Alembic
+# pydantic validates all incoming data before
+# it reaches the database layer.
+
+
+# security and identity management
 #
-# 4. Environment Parity
-#    - Consistent dev and prod environments via Docker
-# =====================================================
-
-
-# =====================================================
-# HIGH-PERFORMANCE ASYNCHRONOUS DESIGN
-# =====================================================
-# - ASGI-based architecture
-# - Powered by Uvicorn and asyncio
-# - Efficient handling of high-concurrency workloads
-# - Non-blocking request lifecycle
+# password security:
+# - bcrypt hashing
+# - no plaintext storage
 #
-# Pydantic ensures all incoming data conforms to
-# predefined schemas before database interaction.
-# =====================================================
-
-
-# =====================================================
-# SECURITY & IDENTITY MANAGEMENT
-# =====================================================
-
-# -------------------------
-# CRYPTOGRAPHIC HASHING
-# -------------------------
-# - Passwords hashed using Bcrypt
-# - No plaintext or reversible storage
-
-# -------------------------
-# STATELESS AUTHENTICATION
-# -------------------------
-# - JWT-based authentication
-# - No server-side sessions
-# - Horizontal scalability
-
-# -------------------------
-# AUTHORIZATION SCOPING
-# -------------------------
-# - Resource ownership enforced
-# - User ID verified in database queries
-# - Prevents cross-user data access
-# =====================================================
-
-
-# =====================================================
-# DATABASE EVOLUTION & INTEGRITY
-# =====================================================
-# - PostgreSQL as primary datastore
-# - SQLAlchemy ORM abstraction
+# authentication:
+# - json web tokens (jwt)
+# - stateless and scalable
 #
-# Schema Versioning:
-# - Alembic manages migrations
+# authorization:
+# - strict resource ownership checks
+# - user id enforced at query level
+
+
+# database design
+# - postgresql database
+# - sqlalchemy orm
 #
-# Relational Integrity:
-# - Foreign key constraints
-# - ON DELETE CASCADE for dependent records
-# =====================================================
-
-
-# =====================================================
-# CONTAINERIZATION STRATEGY
-# =====================================================
-# - Multi-stage Docker builds
-# - Lightweight runtime images
-# - Reduced attack surface
+# migrations:
+# - alembic manages schema evolution
 #
-# Docker Compose:
-# - Orchestrates API and database
-# - Applies migrations before startup
-# =====================================================
+# integrity:
+# - foreign key constraints
+# - on delete cascade for dependent data
 
 
-# =====================================================
-# SYSTEM FUNCTIONALITY
-# =====================================================
-# Authentication Router:
-# - User login
-# - JWT issuance
+# containerization
 #
-# User Router:
-# - Account creation
-# - Profile access
+# docker:
+# - multi-stage builds
+# - minimal runtime image
 #
-# Note Router:
-# - Create, Read, Update, Delete notes
-# - Ownership enforced on every operation
-# =====================================================
+# docker compose:
+# - api service
+# - database service
+# - migrations executed on startup
 
 
-# =====================================================
-# PROJECT STRUCTURE
-# =====================================================
+# api modules
+#
+# auth router:
+# - login
+# - token generation
+#
+# user router:
+# - account creation
+# - profile access
+#
+# note router:
+# - create
+# - read
+# - update
+# - delete
+# - ownership enforced
+
+
+# project structure
+#
 # cloud-notes-api/
 # ├── app/
 # │   ├── main.py
@@ -131,80 +98,48 @@
 # │   ├── models/
 # │   ├── schemas/
 # │   ├── routers/
-# │   ├── services/
 # │   └── database.py
 # ├── alembic/
 # ├── docker-compose.yml
-# ├── Dockerfile
+# ├── dockerfile
 # ├── .env.example
-# └── README.md
-# =====================================================
+# └── readme.md
 
 
-# =====================================================
-# TESTING
-# =====================================================
-# - pytest + httpx for async API testing
-# - Recommended coverage:
-#   * Authentication
-#   * Authorization
-#   * CRUD operations
+# testing
+# - pytest for test execution
+# - httpx for async requests
 #
-# Command:
-#   pytest
-# =====================================================
+# run tests with:
+# pytest
 
 
-# =====================================================
-# ENVIRONMENT SETUP
-# =====================================================
-# Example .env configuration:
+# environment variables
 #
-# DATABASE_URL=postgresql://user:password@db:5432/cloudnotes
-# SECRET_KEY=your_secret_key
-# ALGORITHM=HS256
-# ACCESS_TOKEN_EXPIRE_MINUTES=30
-# =====================================================
+# database_url=postgresql://user:password@db:5432/cloudnotes
+# secret_key=your_secret_key
+# algorithm=hs256
+# access_token_expire_minutes=30
 
 
-# =====================================================
-# DEPLOYMENT
-# =====================================================
-# Command:
-#   docker-compose up --build
+# deployment
 #
-# API available at:
-#   http://localhost:8000
-# =====================================================
-
-
-# =====================================================
-# API DOCUMENTATION
-# =====================================================
-# Swagger UI:
-#   http://localhost:8000/docs
+# start the system with:
+# docker-compose up --build
 #
-# ReDoc:
-#   http://localhost:8000/redoc
-# =====================================================
+# api available at:
+# http://localhost:8000
 
 
-# =====================================================
-# CONTRIBUTING
-# =====================================================
-# 1. Fork the repository
-# 2. Create a feature branch
-# 3. Commit changes
-# 4. Open a Pull Request
-# =====================================================
+# documentation
+#
+# swagger:
+# http://localhost:8000/docs
+#
+# redoc:
+# http://localhost:8000/redoc
 
 
-# =====================================================
-# FINAL NOTES
-# =====================================================
-# Reference architecture for:
-# - Secure backend systems
-# - Async Python APIs
-# - Dockerized services
-# =====================================================
+
+
 
