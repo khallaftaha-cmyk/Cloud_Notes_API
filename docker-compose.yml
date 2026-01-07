@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    ports:
+      - "5432:5432" # Optional: Map host port
+    environment:
+      # Use your specific credentials from .env
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: khallaf
+      POSTGRES_DB: fastapi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # Persistent storage
+
+  # 2. FastAPI Application Service
+  api:
+    build: . # Build using the Dockerfile in this directory
+    container_name: fastapi_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres # Ensure Postgres starts first
+    env_file:
+      - .env # Pass your local environment variables to the container
+    # Critical: Run Alembic migration before starting Uvicorn
+    command: > 
+      sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+    
+volumes:
+  postgres_data:
