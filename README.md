@@ -1,263 +1,210 @@
-#######################################################################
-# ☁️ CLOUD NOTES API
+# =====================================================
+# CLOUD NOTES API
 # A Secure, Containerized Backend Architecture
-#######################################################################
+# =====================================================
 
-# ---------------------------------------------------------------------
+# -----------------------------------------------------
 # PROJECT OVERVIEW
-# ---------------------------------------------------------------------
-# The Cloud Notes API is a production-ready backend solution designed
-# for secure personal data management.
+# -----------------------------------------------------
+# The Cloud Notes API is a production-ready backend
+# solution designed for secure personal data management.
 #
-# Built with FastAPI, this project demonstrates professional backend
-# engineering practices including:
+# Built with FastAPI, this project demonstrates modern
+# backend engineering practices:
 # - Asynchronous web services
-# - Cryptographic security standards
+# - Cryptographic security
 # - Database versioning
 # - Containerized deployment
-# ---------------------------------------------------------------------
+# -----------------------------------------------------
 
 
-#######################################################################
-# 🧱 CORE ENGINEERING PRINCIPLES
-#######################################################################
-# The architecture of this application is based on four pillars of
-# modern software engineering:
+# =====================================================
+# CORE ENGINEERING PRINCIPLES
+# =====================================================
+# The architecture is based on four key pillars:
 #
 # 1. Type Safety
-#    - Strict request/response validation using Pydantic
+#    - Strict schema validation using Pydantic
 #
 # 2. Stateless Security
 #    - JWT-based authentication
 #
 # 3. Persistent Versioning
-#    - Database schema migrations using Alembic
+#    - Database migrations using Alembic
 #
 # 4. Environment Parity
-#    - Identical development and production environments via Docker
-#######################################################################
+#    - Consistent dev and prod environments via Docker
+# =====================================================
 
 
-#######################################################################
-# ⚡ HIGH-PERFORMANCE ASYNCHRONOUS DESIGN
-#######################################################################
-# The system follows the ASGI (Asynchronous Server Gateway Interface)
-# standard.
-#
-# - Powered by Uvicorn and Python's asyncio
-# - Handles high-concurrency workloads efficiently
+# =====================================================
+# HIGH-PERFORMANCE ASYNCHRONOUS DESIGN
+# =====================================================
+# - ASGI-based architecture
+# - Powered by Uvicorn and asyncio
+# - Efficient handling of high-concurrency workloads
 # - Non-blocking request lifecycle
 #
-# Pydantic ensures all incoming data strictly adheres to predefined
-# schemas before reaching the database layer, preventing malformed
-# input and common injection vulnerabilities.
-#######################################################################
+# Pydantic ensures all incoming data conforms to
+# predefined schemas before database interaction.
+# =====================================================
 
 
-#######################################################################
-# 🔐 ADVANCED SECURITY & IDENTITY MANAGEMENT
-#######################################################################
+# =====================================================
+# SECURITY & IDENTITY MANAGEMENT
+# =====================================================
 
-# ---------------------------------------------------------------------
+# -------------------------
 # CRYPTOGRAPHIC HASHING
-# ---------------------------------------------------------------------
-# - Passwords are hashed using the Bcrypt algorithm
-# - No plaintext or reversible credentials are ever stored
-# ---------------------------------------------------------------------
+# -------------------------
+# - Passwords hashed using Bcrypt
+# - No plaintext or reversible storage
 
-# ---------------------------------------------------------------------
+# -------------------------
 # STATELESS AUTHENTICATION
-# ---------------------------------------------------------------------
-# - Authentication is handled via JSON Web Tokens (JWT)
-# - Eliminates server-side sessions
-# - Enables horizontal scalability
-# ---------------------------------------------------------------------
+# -------------------------
+# - JWT-based authentication
+# - No server-side sessions
+# - Horizontal scalability
 
-# ---------------------------------------------------------------------
+# -------------------------
 # AUTHORIZATION SCOPING
-# ---------------------------------------------------------------------
-# - Every request validates resource ownership
-# - Database queries enforce user-to-resource mapping
-# - Prevents unauthorized cross-user data access
-# ---------------------------------------------------------------------
+# -------------------------
+# - Resource ownership enforced
+# - User ID verified in database queries
+# - Prevents cross-user data access
+# =====================================================
 
 
-#######################################################################
-# 🗄️ DATABASE EVOLUTION & INTEGRITY
-#######################################################################
-# - PostgreSQL is used as the primary database
-# - SQLAlchemy ORM provides abstraction and safety
+# =====================================================
+# DATABASE EVOLUTION & INTEGRITY
+# =====================================================
+# - PostgreSQL as primary datastore
+# - SQLAlchemy ORM abstraction
 #
-# ---------------------------------------------------------------------
-# SCHEMA VERSIONING
-# ---------------------------------------------------------------------
-# - Alembic tracks database migrations
-# - Enables safe and controlled schema evolution
+# Schema Versioning:
+# - Alembic manages migrations
 #
-# ---------------------------------------------------------------------
-# RELATIONAL INTEGRITY
-# ---------------------------------------------------------------------
-# - Foreign key constraints enforce consistency
-# - ON DELETE CASCADE removes dependent records automatically
-# - Deleting a user deletes all associated notes
-#######################################################################
+# Relational Integrity:
+# - Foreign key constraints
+# - ON DELETE CASCADE for dependent records
+# =====================================================
 
 
-#######################################################################
-# 🐳 MULTI-STAGE CONTAINERIZATION
-#######################################################################
-
-# ---------------------------------------------------------------------
-# OPTIMIZED DOCKER BUILDS
-# ---------------------------------------------------------------------
-# - Multi-stage Dockerfile:
-#   * Builder stage compiles dependencies
-#   * Runtime stage contains only final artifacts
-# - Results in smaller image size and reduced attack surface
-# ---------------------------------------------------------------------
-
-# ---------------------------------------------------------------------
-# SERVICE ORCHESTRATION
-# ---------------------------------------------------------------------
-# - Docker Compose manages:
-#   * FastAPI service
-#   * PostgreSQL database
-# - Ensures database migrations run before API startup
-# ---------------------------------------------------------------------
+# =====================================================
+# CONTAINERIZATION STRATEGY
+# =====================================================
+# - Multi-stage Docker builds
+# - Lightweight runtime images
+# - Reduced attack surface
+#
+# Docker Compose:
+# - Orchestrates API and database
+# - Applies migrations before startup
+# =====================================================
 
 
-#######################################################################
-# 🧩 SYSTEM FUNCTIONALITY
-#######################################################################
-
-# ---------------------------------------------------------------------
-# AUTHENTICATION ROUTER
-# ---------------------------------------------------------------------
+# =====================================================
+# SYSTEM FUNCTIONALITY
+# =====================================================
+# Authentication Router:
 # - User login
-# - JWT token issuance
-# ---------------------------------------------------------------------
-
-# ---------------------------------------------------------------------
-# USER ROUTER
-# ---------------------------------------------------------------------
+# - JWT issuance
+#
+# User Router:
 # - Account creation
-# - Profile retrieval
-# ---------------------------------------------------------------------
-
-# ---------------------------------------------------------------------
-# NOTE ROUTER
-# ---------------------------------------------------------------------
-# - Full CRUD operations:
-#   * Create
-#   * Read
-#   * Update
-#   * Delete
+# - Profile access
+#
+# Note Router:
+# - Create, Read, Update, Delete notes
 # - Ownership enforced on every operation
-# ---------------------------------------------------------------------
+# =====================================================
 
 
-#######################################################################
-# 📁 PROJECT STRUCTURE
-#######################################################################
+# =====================================================
+# PROJECT STRUCTURE
+# =====================================================
 # cloud-notes-api/
 # ├── app/
 # │   ├── main.py
-# │   ├── core/          # Security, config, JWT logic
-# │   ├── models/        # SQLAlchemy models
-# │   ├── schemas/       # Pydantic schemas
-# │   ├── routers/       # API routes
-# │   ├── services/      # Business logic
+# │   ├── core/
+# │   ├── models/
+# │   ├── schemas/
+# │   ├── routers/
+# │   ├── services/
 # │   └── database.py
-# ├── alembic/           # Database migrations
+# ├── alembic/
 # ├── docker-compose.yml
 # ├── Dockerfile
 # ├── .env.example
 # └── README.md
-#######################################################################
+# =====================================================
 
 
-#######################################################################
-# 🧪 TESTING
-#######################################################################
-# - Tests can be written using pytest and httpx
+# =====================================================
+# TESTING
+# =====================================================
+# - pytest + httpx for async API testing
 # - Recommended coverage:
-#   * Authentication flows
-#   * Authorization enforcement
+#   * Authentication
+#   * Authorization
 #   * CRUD operations
-#   * Edge cases and invalid inputs
 #
 # Command:
 #   pytest
-#######################################################################
+# =====================================================
 
 
-#######################################################################
-# 🌱 ENVIRONMENT SETUP
-#######################################################################
-# Sensitive configuration is managed via a .env file.
+# =====================================================
+# ENVIRONMENT SETUP
+# =====================================================
+# Example .env configuration:
 #
-# Example:
 # DATABASE_URL=postgresql://user:password@db:5432/cloudnotes
 # SECRET_KEY=your_secret_key
 # ALGORITHM=HS256
 # ACCESS_TOKEN_EXPIRE_MINUTES=30
-#
-# This follows the Twelve-Factor App methodology.
-#######################################################################
+# =====================================================
 
 
-#######################################################################
-# 🚀 DEPLOYMENT
-#######################################################################
-# Start the full stack using:
-#
+# =====================================================
+# DEPLOYMENT
+# =====================================================
+# Command:
 #   docker-compose up --build
 #
-# This will:
-# - Provision the PostgreSQL database
-# - Apply Alembic migrations
-# - Launch the API on http://localhost:8000
-#######################################################################
+# API available at:
+#   http://localhost:8000
+# =====================================================
 
 
-#######################################################################
-# 📚 API DOCUMENTATION
-#######################################################################
-# Interactive documentation is automatically generated:
+# =====================================================
+# API DOCUMENTATION
+# =====================================================
+# Swagger UI:
+#   http://localhost:8000/docs
 #
-# - Swagger UI: http://localhost:8000/docs
-# - ReDoc:     http://localhost:8000/redoc
-#######################################################################
+# ReDoc:
+#   http://localhost:8000/redoc
+# =====================================================
 
 
-#######################################################################
-# 🤝 CONTRIBUTING
-#######################################################################
+# =====================================================
+# CONTRIBUTING
+# =====================================================
 # 1. Fork the repository
 # 2. Create a feature branch
-# 3. Commit your changes
+# 3. Commit changes
 # 4. Open a Pull Request
-#
-# Please ensure code quality and add tests where applicable.
-#######################################################################
+# =====================================================
 
 
-#######################################################################
-# 📄 LICENSE
-#######################################################################
-# This project is licensed under the MIT License.
-# You are free to use, modify, and distribute this software.
-#######################################################################
-
-
-#######################################################################
-# ✅ FINAL NOTES
-#######################################################################
-# The Cloud Notes API serves as a reference architecture for:
+# =====================================================
+# FINAL NOTES
+# =====================================================
+# Reference architecture for:
 # - Secure backend systems
 # - Async Python APIs
 # - Dockerized services
-# - Scalable authentication mechanisms
-#
-# Ideal for learning, portfolios, and real-world backend foundations.
-#######################################################################
+# =====================================================
+
