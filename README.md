@@ -4,14 +4,9 @@ The **Cloud Notes API** is a high-performance, production-ready RESTful service 
 
 ---
 
-## 🏗️ Core Engineering Principles
+##  Core Engineering Principles
 
-The architecture of this application is founded on four pillars of modern software engineering: type safety, stateless security, persistent versioning, and environment parity.
-
-
-
-[Image of a RESTful API architectural diagram]
-
+The architecture of this application is founded on four pillars of modern software engineering: type safety, stateless security, persistent versioning, and environment parity
 
 ### 1. High-Performance Asynchronous Design
 The system is built using an **Asynchronous Server Gateway Interface (ASGI)** pattern. By leveraging Python's `asyncio` through the **Uvicorn** server, the API can handle high-concurrency workloads without blocking execution threads. 
@@ -43,7 +38,7 @@ To bridge the gap between development and production, the project uses a refined
 
 ---
 
-## 📂 Project Structure and Components
+##  Project Structure and Components
 
 * **routers/**: Modular controllers that separate concerns between Authentication, User Management, and Note CRUD operations.
 * **models.py**: Definitions for the SQLAlchemy database tables.
@@ -53,7 +48,7 @@ To bridge the gap between development and production, the project uses a refined
 
 ---
 
-## 🛠️ Implementation and Deployment
+##  Implementation and Deployment
 
 ### Environment Setup
 The system relies on a `.env` file to manage sensitive configurations. This keeps secrets (like your `SECRET_KEY`) out of the source code, adhering to the **Twelve-Factor App** methodology.
