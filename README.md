@@ -70,4 +70,3 @@ The API features self-documenting capabilities. Once the server is live, detaile
 * **ReDoc**: `http://localhost:8000/redoc`
 
 ---
-*Developed for the Summer Undergraduate Research Fellowship (SURF) Application.*
