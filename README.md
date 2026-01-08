@@ -13,7 +13,7 @@ The architecture of this application is founded on four pillars of modern softwa
 The system is built using an **Asynchronous Server Gateway Interface (ASGI)** pattern. By leveraging Python’s `asyncio` through the **Uvicorn** server, the API handles high-concurrency workloads without blocking execution threads.
 
 * **Data Validation**: Utilizing **Pydantic**, the API enforces strict schema-based validation. Every request is checked before processing, ensuring that application logic never receives malformed data.
-* **Serialization**: The system automatically converts complex database models—including aggregated vote counts—into clean JSON responses.
+* **Serialization**: The system automatically converts complex database models including aggregated vote counts into clean JSON responses.
 
 ### 2. Advanced Security and Identity Management
 
