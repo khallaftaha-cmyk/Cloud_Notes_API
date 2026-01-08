@@ -37,20 +37,20 @@ The application uses **SQLAlchemy** as an Object-Relational Mapper (ORM) with a 
 ## Project Structure and Components
 
 post-management-api/
-├── alembic/ # Database migration history
-├── app/
-│ ├── routers/ # auth.py, user.py, post.py, vote.py
-│ ├── config.py # Environment configuration via Pydantic
-│ ├── database.py # SQLAlchemy engine and session management
-│ ├── main.py # FastAPI entry point and CORS setup
-│ ├── models.py # SQLAlchemy relational models
-│ ├── oauth2.py # JWT creation and verification logic
-│ ├── schemas.py # Pydantic request/response models
-│ └── utils.py # Argon2 password hashing utilities
-├── alembic.ini # Alembic configuration
-├── Procfile # Cloud deployment instructions
-├── requirements.txt # Dependency manifest
-└── .env # Environment secrets (ignored by Git)
+* alembic/ # Database migration history
+* app/
+  * routers/ # auth.py, user.py, post.py, vote.py
+  * config.py # Environment configuration via Pydantic
+  * database.py # SQLAlchemy engine and session management
+  * main.py # FastAPI entry point and CORS setup
+  * models.py # SQLAlchemy relational models
+  * oauth2.py # JWT creation and verification logic
+  * schemas.py # Pydantic request/response models
+  * utils.py # Argon2 password hashing utilities
+* alembic.ini # Alembic configuration
+* Procfile # Cloud deployment instructions
+* requirements.txt # Dependency manifest
+* .env # Environment secrets (ignored by Git)
 
 
 ---
