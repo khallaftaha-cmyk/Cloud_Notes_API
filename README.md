@@ -29,7 +29,7 @@ The application uses **SQLAlchemy** as an Object-Relational Mapper (ORM) with a 
 
 * **Relational Schema**: The system models users, posts, and votes. Voting behavior is implemented using a composite key table to simulate a many-to-many relationship.
 * **Voting Logic**: The API supports upvoting and downvoting while preventing duplicate votes through database constraints and application logic.
-* **Schema Versioning**: **Alembic** manages database migrations, allowing incremental schema updates—such as introducing the voting system—without data loss.
+* **Schema Versioning**: **Alembic** manages database migrations, allowing incremental schema updates such as introducing the voting system without data loss.
 * **Referential Integrity**: The schema enforces `ON DELETE CASCADE`. When a user deletes their account, all related posts and votes are automatically removed.
 
 ---
