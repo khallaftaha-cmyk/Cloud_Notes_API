@@ -77,27 +77,24 @@ post-management-api/
 
 The system relies on a `.env` file to manage sensitive configurations, following the **Twelve-Factor App** methodology.
 
-DATABASE_HOSTNAME=your_host
-DATABASE_PORT=5432
-DATABASE_PASSWORD=your_password
-DATABASE_NAME=your_db_name
-DATABASE_USERNAME=your_user
-SECRET_KEY=your_generated_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+* DATABASE_HOSTNAME=your_host
+* DATABASE_PORT=5432
+* DATABASE_PASSWORD=your_password
+* DATABASE_NAME=your_db_name
+* DATABASE_USERNAME=your_user
+* SECRET_KEY=your_generated_secret_key
+* ALGORITHM=HS256
+* ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 ### Local Setup
 
 1. Clone the repository:
-git clone https://github.com/khallaftaha-cmyk/Post_Management_API
-cd Post_Management_API
-
-cpp
-Copy code
+* git clone https://github.com/khallaftaha-cmyk/Post_Management_API
+* cd Post_Management_API
 
 2. Create and activate a virtual environment:
-python -m venv venv
-source venv/bin/activate
+* python -m venv venv
+* source venv/bin/activate
 
 3. Install dependencies:
 pip install -r requirements.txt
