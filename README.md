@@ -1,6 +1,13 @@
-# Post Management API: Secure Social Data Orchestration
+# Cloud Notes API: A Secure, Containerized Backend Architecture
+![Python](https://img.shields.io/badge/Python-Backend-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Auth-orange?style=for-the-badge)
+![Linux](https://img.shields.io/badge/Linux-Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
 
-The **Post Management API** is a high-performance, production-ready RESTful service designed for social media data management. Built with the **FastAPI** framework, this project serves as a comprehensive demonstration of modern backend engineering, including asynchronous programming, complex relational database logic, and high-entropy cryptographic security.
+
+The **Cloud Notes API** is a high-performance, production-ready RESTful service designed for secure personal data management. Built with the **FastAPI** framework, this project serves as a comprehensive demonstration of modern backend engineering, including asynchronous programming, cryptographic security, and automated infrastructure orchestration.
 
 ---
 
@@ -9,110 +16,65 @@ The **Post Management API** is a high-performance, production-ready RESTful serv
 The architecture of this application is founded on four pillars of modern software engineering: type safety, stateless security, persistent versioning, and environment parity.
 
 ### 1. High-Performance Asynchronous Design
+The system is built using an **Asynchronous Server Gateway Interface (ASGI)** pattern. By leveraging Python's `asyncio` through the **Uvicorn** server, the API can handle high-concurrency workloads without blocking execution threads. 
 
-The system is built using an **Asynchronous Server Gateway Interface (ASGI)** pattern. By leveraging Python’s `asyncio` through the **Uvicorn** server, the API handles high-concurrency workloads without blocking execution threads.
-
-* **Data Validation**: Utilizing **Pydantic**, the API enforces strict schema-based validation. Every request is checked before processing, ensuring that application logic never receives malformed data.
-* **Serialization**: The system automatically converts complex database models including aggregated vote counts into clean JSON responses.
+* **Data Validation**: Utilizing **Pydantic**, the API enforces strict data validation. Every request is checked against a schema before processing, ensuring that the application logic never receives malformed or malicious data.
+* **Serialization**: The system automatically handles the conversion between database models and JSON responses, maintaining a clean separation between the persistence layer and the presentation layer.
 
 ### 2. Advanced Security and Identity Management
+Security is not an afterthought but a core component of the system's design:
 
-Security is not an afterthought but a core component of the system’s design.
+* **Cryptographic Hashing**: User privacy is protected using the **Bcrypt** hashing algorithm. The system follows best practices by never storing plain-text passwords; instead, it generates unique, non-reversible hashes.
+* **Stateless Authentication**: The system utilizes **JSON Web Tokens (JWT)**. This allows the server to remain stateless, making it easier to scale across multiple cloud instances since user identity is verified through a signed cryptographic payload.
+* **Authorization Scoping**: Every data request is subject to a strict ownership check. The API verifies the user's ID against the resource's `owner_id` within the database query itself, preventing unauthorized data leakage between users.
 
-* **Cryptographic Hashing**: User credentials are protected using **Argon2** via `passlib`. As the winner of the Password Hashing Competition, Argon2 provides strong resistance against GPU-based attacks.
-* **Stateless Authentication**: The API uses **JSON Web Tokens (JWT)**, allowing the server to remain stateless and horizontally scalable across multiple cloud instances.
-* **Authorization Scoping**: Every request enforces strict ownership checks by validating the authenticated user’s ID against the resource `owner_id` directly at the database query level.
+### 3. Database Evolution and Integrity
+The application utilizes **SQLAlchemy** as an Object-Relational Mapper (ORM) to interact with a **PostgreSQL** database.
 
-### 3. Database Evolution and Relational Logic
 
-The application uses **SQLAlchemy** as an Object-Relational Mapper (ORM) with a **PostgreSQL** backend.
 
-* **Relational Schema**: The system models users, posts, and votes. Voting behavior is implemented using a composite key table to simulate a many-to-many relationship.
-* **Voting Logic**: The API supports upvoting and downvoting while preventing duplicate votes through database constraints and application logic.
-* **Schema Versioning**: **Alembic** manages database migrations, allowing incremental schema updates such as introducing the voting system without data loss.
-* **Referential Integrity**: The schema enforces `ON DELETE CASCADE`. When a user deletes their account, all related posts and votes are automatically removed.
+* **Relational Schema**: The database consists of a `users` table and a `notes` table. A one-to-many relationship is enforced via a Foreign Key, ensuring that every note is tied to a specific creator.
+* **Schema Versioning**: To manage the complexity of database changes, **Alembic** is used for migration tracking. This allows the team to "time travel" through different versions of the database schema without losing data.
+* **Referential Integrity**: The schema uses `ON DELETE CASCADE` logic. If a user deletes their account, the system automatically purges all associated notes to maintain database hygiene and user privacy.
+
+### 4. Multi-Stage Containerization
+To bridge the gap between development and production, the project uses a refined **Docker** strategy:
+
+* **Optimized Builds**: The Dockerfile implements a **multi-stage build** process. It uses a "builder" stage to compile dependencies into wheels and a "runtime" stage that only contains the final packages. This reduces the attack surface and minimizes the final image size for faster cloud deployment.
+* **Service Orchestration**: **Docker Compose** manages the lifecycle of both the API and the PostgreSQL database. It ensures the database is "healthy" and migrations are applied before the API begins accepting traffic.
 
 ---
 
 ## Project Structure and Components
 
-post-management-api/
-* alembic/ # Database migration history
-* app/
-  * routers/ # auth.py, user.py, post.py, vote.py
-  * config.py # Environment configuration via Pydantic
-  * database.py # SQLAlchemy engine and session management
-  * main.py # FastAPI entry point and CORS setup
-  * models.py # SQLAlchemy relational models
-  * oauth2.py # JWT creation and verification logic
-  * schemas.py # Pydantic request/response models
-  * utils.py # Argon2 password hashing utilities
-* alembic.ini # Alembic configuration
-* Procfile # Cloud deployment instructions
-* requirements.txt # Dependency manifest
-* .env # Environment secrets (ignored by Git)
-
-
----
-
-## Tool Documentation and Usage
-
-### Authentication and User Management
-
-* **User Registration**: Create an account via the `/users` endpoint. Passwords are automatically hashed using Argon2 before storage.
-* **JWT Login**: Submit credentials to the `/login` endpoint to receive a Bearer Token. This token must be included in the `Authorization` header for all protected routes.
-
-### Post Orchestration and Interaction
-
-* **CRUD Operations**: Full Create, Read, Update, and Delete support for posts.
-* **Voting System**: Interact with content via the `/vote` endpoint:
-  * `dir=1` adds a vote
-  * `dir=0` removes a previously cast vote
+* **routers/**: Modular controllers that separate concerns between Authentication, User Management, and Note CRUD operations.
+* **models.py**: Definitions for the SQLAlchemy database tables.
+* **schemas.py**: Pydantic models used for request and response validation.
+* **oauth2.py**: Centralized logic for JWT token creation, decoding, and user verification.
+* **config.py**: A robust configuration engine that pulls sensitive data from `.env` files.
 
 ---
 
 ## Implementation and Deployment
 
 ### Environment Setup
+The system relies on a `.env` file to manage sensitive configurations. This keeps secrets (like your `SECRET_KEY`) out of the source code, adhering to the **Twelve-Factor App** methodology.
 
-The system relies on a `.env` file to manage sensitive configurations, following the **Twelve-Factor App** methodology.
+### Rapid Deployment
+To initialize the entire stack, use the following command:
 
-* DATABASE_HOSTNAME=your_host
-* DATABASE_PORT=5432
-* DATABASE_PASSWORD=your_password
-* DATABASE_NAME=your_db_name
-* DATABASE_USERNAME=your_user
-* SECRET_KEY=your_generated_secret_key
-* ALGORITHM=HS256
-* ACCESS_TOKEN_EXPIRE_MINUTES=30
+`docker-compose up --build`
 
-### Local Setup
+This single command triggers the following automated workflow:
+1. Provisions a PostgreSQL container with a persistent volume.
+2. Builds the FastAPI image using the multi-stage optimization.
+3. Runs `alembic upgrade head` to sync the database schema.
+4. Starts the Uvicorn server to begin listening for requests.
 
-1. Clone the repository:
-* git clone https://github.com/khallaftaha-cmyk/Post_Management_API
-* cd Post_Management_API
-
-2. Create and activate a virtual environment:
-* python -m venv venv
-* source venv/bin/activate
-
-3. Install dependencies:
-* pip install -r requirements.txt
-
-4. Apply database migrations:
-* alembic upgrade head
-
-5. Start the application:
-* uvicorn app.main:app --reload
-
----
-
-## Interactive Documentation
-
-Once the server is running, the API provides self-documenting OpenAPI interfaces:
-
-* **Swagger UI**: http://localhost:8000/docs
-* **ReDoc**: http://localhost:8000/redoc
+### Interactive Documentation
+The API features self-documenting capabilities. Once the server is live, detailed documentation is available at:
+* **Swagger UI**: `http://localhost:8000/docs`
+* **ReDoc**: `http://localhost:8000/redoc`
 
 ---
 
@@ -121,4 +83,6 @@ Once the server is running, the API provides self-documenting OpenAPI interfaces
 **Taha Khallaf**  
 DevOps Engineer & Backend Developer
 
-This project was developed to showcase advanced backend engineering skills, including secure authentication, relational database modeling, migration management, and scalable API design. If you find this infrastructure useful, consider giving the repository a star.
+I designed and developed the Cloud Notes API to showcase modern backend engineering practices, including secure JWT-based authentication, asynchronous request handling, database integrity management, and Docker-based environment parity.
+
+This project serves as both a learning platform and a reference architecture for building scalable, secure backend services.
