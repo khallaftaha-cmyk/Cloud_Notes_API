@@ -1,31 +1,34 @@
-# ----------------------------------------------------------------------
-# STAGE 1: Builder (Install dependencies and cache them)
-# ----------------------------------------------------------------------
-FROM python:3.11-slim as builder
-ENV PYTHONUNBUFFERED 1
-WORKDIR /install
+FROM python:3.11-slim AS build
 
-# Copy requirements.txt first for effective Docker caching
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /install/wheels -r requirements.txt
+WORKDIR /app
 
-# ----------------------------------------------------------------------
-# STAGE 2: Runtime (The final, lightweight image for deployment)
-# ----------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev
+
+RUN pip install --upgrade pip
+
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app
+
+
 FROM python:3.11-slim
-ENV APP_HOME /app
-WORKDIR $APP_HOME
 
-# Copy the pre-built dependencies from the builder stage
-COPY --from=builder /install /usr/local/
-COPY --from=builder /install/wheels /tmp/wheels
-COPY requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links /tmp/wheels -r requirements.txt \
-    && rm -rf /tmp/wheels
+WORKDIR /app
 
-# Copy the actual application source code
-COPY . $APP_HOME
+RUN apt-get update && apt-get install -y --no-install-recommends curl libpq-dev && rm -rf /var/lib/apt/lists/*
 
-# Set the entry point (Uvicorn starts the FastAPI application)
+RUN addgroup --system app && adduser --system --ingroup app app
+
+COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=build /usr/local/bin /usr/local/bin
+COPY --from=build /app /app
+
+USER app
+
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+CMD curl -f http://localhost:8000/health || exit 1

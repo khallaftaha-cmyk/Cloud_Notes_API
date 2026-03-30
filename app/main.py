@@ -4,10 +4,8 @@ from .database import engine
 from .routers import note, user, auth
 from fastapi.middleware.cors import CORSMiddleware
 
-#models.Base.metadata.create_all(bind=engine)
 
-
-app = FastAPI()
+app = FastAPI(title="Cloud Notes API", version="1.0.0")
 
 origins = ["*"]
 
@@ -19,7 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 app.include_router(note.router)
 app.include_router(user.router)
 app.include_router(auth.router)
+
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "ok"}
