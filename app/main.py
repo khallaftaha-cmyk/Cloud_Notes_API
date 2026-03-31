@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from . import models
 from .database import engine
-from .routers import note, user, auth
+from .routers import note, user, auth, ai
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(note.router)
 app.include_router(user.router)
 app.include_router(auth.router)
+app.include_router(ai.router)
 
 
 @app.get("/health", tags=["Health"])

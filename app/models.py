@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, ARRAY
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.schema import FetchedValue
@@ -19,7 +19,7 @@ class Note(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
-    # server_onupdate ensures the DB triggers the update, reliable with ORM-level updates
+    tags = Column(ARRAY(String), nulable=False, server_default=text("'{}'"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=text("now()"), server_onupdate=FetchedValue())
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
