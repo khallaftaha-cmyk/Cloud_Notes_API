@@ -19,7 +19,7 @@ class Note(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
-    tags = Column(ARRAY(String), nulable=False, server_default=text("'{}'"))
+    tags = Column(ARRAY(String), nullable=False, server_default=text("'{}'"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=text("now()"), server_onupdate=FetchedValue())
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
