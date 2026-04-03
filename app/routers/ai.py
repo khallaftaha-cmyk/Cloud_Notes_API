@@ -46,7 +46,7 @@ def tag_note(
 
 @router.post("/generate", response_model=schemas.NoteGenerateResponse)
 def generate_note(
-    request: schemas.NoteGenarateRequest,
+    request: schemas.NoteGenerateRequest,
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
