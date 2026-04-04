@@ -11,7 +11,6 @@ class UserRead(BaseModel):
     email: EmailStr
     id: int
     created_at: datetime
-    password: str
 
 class NoteCreate(BaseModel):
     title: str

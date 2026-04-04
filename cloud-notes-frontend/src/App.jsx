@@ -254,6 +254,7 @@ function AuthScreen({ onAuth }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isNew, setIsNew] = useState(false);
 
   async function handleSubmit() {
     setError(""); setLoading(true);
@@ -431,7 +432,7 @@ export default function App() {
   useEffect(() => { if (token) loadNotes(); }, [token]);
 
   function selectNote(note) {
-    setSelected(note); setTitle(note.title); setContent(note.content); setDirty(false); setError("");
+    setSelected(note); setTitle(note.title); setContent(note.content); setDirty(false); setError(""); setIsNew(false);
   }
 
   function newNote() {
@@ -451,6 +452,7 @@ export default function App() {
         setSelected(created); setTitle(created.title); setContent(created.content);
         setNotes(prev => [created, ...prev]);
       }
+      setIsNew(false); // add this
       setDirty(false); setSaveStatus("Saved"); setTimeout(() => setSaveStatus(""), 2000);
     } catch (e) { setError(e.message); }
   }
@@ -561,7 +563,7 @@ export default function App() {
 
         {/* Editor */}
         <div className="main">
-          {selected !== null || title || content ? (
+           {selected !== null || title || content || isNew ? (
             <>
               <div className="toolbar">
                 <button className="toolbar-btn primary" onClick={saveNote}>Save</button>

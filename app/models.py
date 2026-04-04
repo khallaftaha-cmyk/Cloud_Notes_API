@@ -21,7 +21,7 @@ class Note(Base):
     content = Column(String, nullable=False)
     tags = Column(ARRAY(String), nullable=False, server_default=text("'{}'"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
-                        server_default=text("now()"), server_onupdate=FetchedValue())
+                    server_default=text("now()"), server_onupdate=FetchedValue())
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User")
