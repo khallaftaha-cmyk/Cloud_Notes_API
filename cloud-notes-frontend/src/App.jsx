@@ -1,344 +1,488 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-const API_BASE = "http://localhost:8000";
+/* ─── Google Fonts ─────────────────────────────────────────────────────────── */
+const FONTS = document.createElement("link");
+FONTS.rel = "stylesheet";
+FONTS.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600&display=swap";
+document.head.appendChild(FONTS);
 
-const fonts = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');`;
+/* ─── API ───────────────────────────────────────────────────────────────────── */
+const BASE = "http://127.0.0.1:8000";
 
-const css = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d1117; color: #e8e2d9; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+async function api(path, opts = {}, token = null) {
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(BASE + path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+  if (res.status === 204) return null;
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Request failed");
+  return data;
+}
+
+async function login(email, password) {
+  const body = new URLSearchParams({ username: email, password });
+  const res = await fetch(`${BASE}/login`, { method: "POST", body });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Login failed");
+  return data; // { access_token, token_type }
+}
+
+/* ─── Helpers ───────────────────────────────────────────────────────────────── */
+const fmtDate = (iso) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/* ─── Global styles ─────────────────────────────────────────────────────────── */
+const style = document.createElement("style");
+style.textContent = `
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: #f5f2ec;
+    color: #1a1714;
+  }
 
   :root {
-    --ink: #0d1117;
-    --ink-2: #161d27;
-    --ink-3: #1e2733;
-    --amber: #d4943a;
-    --amber-dim: #a06e25;
-    --amber-glow: rgba(212,148,58,0.12);
-    --cream: #e8e2d9;
-    --muted: #8a8278;
-    --border: rgba(232,226,217,0.08);
-    --border-hover: rgba(232,226,217,0.18);
-    --danger: #c0392b;
+    --bg:       #f5f2ec;
+    --surface:  #edeae2;
+    --border:   #d8d3c8;
+    --ink:      #1a1714;
+    --ink2:     #5a5650;
+    --ink3:     #9a958e;
+    --accent:   #b85c2a;
+    --accent2:  #e8956a;
+    --white:    #fdfcf9;
+    --danger:   #b83232;
+    --success:  #2a7a4a;
   }
 
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* layout */
   .app { display: flex; height: 100vh; overflow: hidden; }
 
-  /* Sidebar */
+  /* ── Sidebar ── */
   .sidebar {
-    width: 280px; min-width: 280px; background: var(--ink-2);
-    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    width: 300px; min-width: 300px;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
     overflow: hidden;
   }
-  .sidebar-header {
-    padding: 24px 20px 16px; border-bottom: 1px solid var(--border);
+  .sidebar-top {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--border);
   }
-  .logo {
-    font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
-    color: var(--cream); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;
+  .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 600;
+    color: var(--ink); letter-spacing: -0.5px;
+    display: flex; align-items: center; gap: 8px;
   }
-  .logo-dot { width: 8px; height: 8px; background: var(--amber); border-radius: 50%; }
-  .sidebar-user {
-    margin-top: 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.3px;
+  .brand-dot {
+    width: 9px; height: 9px;
+    background: var(--accent); border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .user-email {
+    font-size: 11px; color: var(--ink3);
+    margin-top: 4px; margin-left: 17px;
   }
 
-  .new-note-btn {
-    margin: 14px 16px; padding: 10px 14px; background: var(--amber); color: var(--ink);
-    border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px;
-    font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;
-    transition: background 0.15s; letter-spacing: 0.2px;
+  .sidebar-actions {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
   }
-  .new-note-btn:hover { background: #e8a84a; }
 
-  .ai-actions {
-    padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px;
+  /* primary new-note button */
+  .btn-new {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--accent); color: var(--white);
+    border: none; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .15s;
+    width: 100%;
   }
-  .ai-actions-label {
-    font-size: 10px; font-weight: 500; color: var(--muted); letter-spacing: 1px;
-    text-transform: uppercase; margin-bottom: 2px;
-  }
-  .ai-btn {
-    padding: 8px 12px; background: transparent; border: 1px solid var(--border);
-    border-radius: 7px; color: var(--cream); font-family: 'DM Sans', sans-serif;
-    font-size: 12px; cursor: pointer; text-align: left; display: flex; align-items: center;
-    gap: 8px; transition: all 0.15s;
-  }
-  .ai-btn:hover { background: var(--amber-glow); border-color: var(--amber-dim); color: var(--amber); }
-  .ai-btn-icon { font-size: 14px; }
+  .btn-new:hover { background: #a04d22; }
 
-  .note-list { flex: 1; overflow-y: auto; padding: 8px; }
-  .note-list::-webkit-scrollbar { width: 4px; }
-  .note-list::-webkit-scrollbar-track { background: transparent; }
-  .note-list::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
-
-  .note-item {
-    padding: 12px 14px; border-radius: 8px; cursor: pointer; margin-bottom: 2px;
-    border: 1px solid transparent; transition: all 0.12s; position: relative;
+  /* AI sidebar buttons */
+  .btn-ai {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--border); border-radius: 7px;
+    font-family: 'Syne', sans-serif; font-size: 12px; color: var(--ink2);
+    cursor: pointer; transition: all .15s; text-align: left; width: 100%;
   }
-  .note-item:hover { background: var(--ink-3); border-color: var(--border); }
-  .note-item.active { background: var(--amber-glow); border-color: var(--amber-dim); }
-  .note-item-title { font-size: 13px; font-weight: 500; color: var(--cream); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .note-item-preview { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5; }
-  .note-item-date { font-size: 10px; color: var(--muted); margin-top: 5px; opacity: 0.7; }
-  .note-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
-  .tag { font-size: 10px; padding: 1px 6px; background: var(--amber-glow); color: var(--amber); border-radius: 10px; }
+  .btn-ai:hover { background: var(--surface); border-color: var(--accent2); color: var(--accent); }
+  .btn-ai:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-ai-icon { font-size: 14px; flex-shrink: 0; }
 
-  /* Main content */
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--ink); }
+  .ai-section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--ink3);
+    padding: 8px 14px 4px;
+  }
+
+  /* note list */
+  .note-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+  .note-count { font-size: 10px; color: var(--ink3); padding: 8px 14px 4px; letter-spacing: .5px; }
+  .note-empty-list {
+    text-align: center; padding: 40px 20px;
+    font-size: 13px; color: var(--ink3);
+  }
+
+  .note-card {
+    padding: 11px 13px; border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer; margin-bottom: 3px;
+    transition: all .12s;
+  }
+  .note-card:hover { background: var(--surface); border-color: var(--border); }
+  .note-card.active {
+    background: #fdf0e8;
+    border-color: var(--accent2);
+  }
+  .note-card-title {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .note-card-preview {
+    font-size: 11px; color: var(--ink3); line-height: 1.5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
+  .note-card-meta {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .note-card-date { font-size: 10px; color: var(--ink3); }
+  .note-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 10px; padding: 1px 7px;
+    background: #fde8d8; color: var(--accent);
+    border-radius: 10px; font-weight: 500;
+  }
+
+  /* logout */
+  .sidebar-bottom {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-logout {
+    width: 100%; padding: 8px;
+    background: transparent; border: 1px solid var(--border); border-radius: 7px;
+    font-family: 'Syne', sans-serif; font-size: 12px; color: var(--ink3);
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Main editor area ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 
   .toolbar {
-    height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
-    padding: 0 24px; gap: 10px; background: var(--ink);
+    height: 54px; padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--white);
   }
-  .toolbar-btn {
-    padding: 6px 12px; background: transparent; border: 1px solid var(--border);
-    border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif;
-    font-size: 12px; cursor: pointer; transition: all 0.12s; display: flex; align-items: center; gap: 5px;
+  .btn-toolbar {
+    padding: 7px 14px;
+    border-radius: 7px; border: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all .15s; background: transparent; color: var(--ink2);
+    display: flex; align-items: center; gap: 6px;
   }
-  .toolbar-btn:hover { border-color: var(--border-hover); color: var(--cream); }
-  .toolbar-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-  .toolbar-btn.primary { background: var(--amber); color: var(--ink); border-color: var(--amber); font-weight: 500; }
-  .toolbar-btn.primary:hover { background: #e8a84a; }
-  .toolbar-spacer { flex: 1; }
-  .save-status { font-size: 11px; color: var(--muted); }
+  .btn-toolbar:hover { background: var(--surface); color: var(--ink); }
+  .btn-toolbar.save { background: var(--accent); color: var(--white); border-color: var(--accent); }
+  .btn-toolbar.save:hover { background: #a04d22; }
+  .btn-toolbar.save:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-toolbar.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .toolbar-gap { flex: 1; }
+  .toolbar-status { font-size: 11px; color: var(--ink3); }
+  .toolbar-error { font-size: 11px; color: var(--danger); }
+  .toolbar-ok { font-size: 11px; color: var(--success); }
 
-  .editor-area { flex: 1; overflow-y: auto; padding: 48px 64px; }
-  .editor-area::-webkit-scrollbar { width: 6px; }
-  .editor-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  .editor-title {
-    font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700;
-    color: var(--cream); background: transparent; border: none; width: 100%;
-    outline: none; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 24px;
-    caret-color: var(--amber);
+  /* editor */
+  .editor-wrap { flex: 1; overflow-y: auto; padding: 52px 80px; }
+  .editor-title-input {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px; font-weight: 600; line-height: 1.15;
+    color: var(--ink); background: transparent; border: none; outline: none;
+    width: 100%; resize: none; display: block;
+    caret-color: var(--accent);
+    margin-bottom: 28px;
+    letter-spacing: -0.5px;
   }
-  .editor-title::placeholder { color: rgba(232,226,217,0.2); }
-
-  .editor-content {
-    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 300;
-    color: rgba(232,226,217,0.8); background: transparent; border: none;
-    width: 100%; outline: none; resize: none; line-height: 1.85; min-height: 420px;
-    caret-color: var(--amber);
+  .editor-title-input::placeholder { color: #c8c3bb; }
+  .editor-body-input {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 400; line-height: 1.9;
+    color: var(--ink2); background: transparent; border: none; outline: none;
+    width: 100%; resize: none; display: block; min-height: 480px;
+    caret-color: var(--accent);
   }
-  .editor-content::placeholder { color: rgba(232,226,217,0.15); }
+  .editor-body-input::placeholder { color: #c8c3bb; }
 
-  /* Empty state */
-  .empty-state {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 12px; color: var(--muted);
+  /* empty state */
+  .empty-editor {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; color: var(--ink3);
   }
-  .empty-state-icon { font-size: 48px; opacity: 0.3; }
-  .empty-state-title { font-family: 'Playfair Display', serif; font-size: 20px; color: rgba(232,226,217,0.3); }
-  .empty-state-sub { font-size: 13px; }
+  .empty-editor-glyph {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 72px; opacity: .12; line-height: 1; color: var(--accent);
+  }
+  .empty-editor-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; color: #c0bab2; font-style: italic;
+  }
+  .empty-editor-sub { font-size: 12px; color: var(--ink3); }
 
-  /* Auth screen */
-  .auth-screen {
+  /* ── Auth ── */
+  .auth-page {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: var(--ink); position: relative; overflow: hidden;
-  }
-  .auth-bg {
-    position: absolute; inset: 0; background:
-      radial-gradient(ellipse 60% 50% at 70% 50%, rgba(212,148,58,0.06) 0%, transparent 70%);
+    background: var(--bg);
   }
   .auth-card {
-    width: 380px; background: var(--ink-2); border: 1px solid var(--border);
-    border-radius: 16px; padding: 40px; position: relative; z-index: 1;
+    width: 400px; background: var(--white);
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 44px 40px;
   }
-  .auth-logo {
-    font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700;
-    color: var(--cream); text-align: center; margin-bottom: 6px;
+  .auth-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 600; color: var(--ink);
+    text-align: center; margin-bottom: 4px;
     display: flex; align-items: center; justify-content: center; gap: 10px;
   }
-  .auth-sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 32px; }
-  .auth-tabs { display: flex; gap: 0; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+  .auth-tagline { text-align: center; font-size: 12px; color: var(--ink3); margin-bottom: 32px; }
+
+  .auth-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 26px; }
   .auth-tab {
-    flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid transparent;
-    color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
-    transition: all 0.15s; margin-bottom: -1px;
+    flex: 1; padding: 10px; background: none; border: none;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    font-family: 'Syne', sans-serif; font-size: 13px; color: var(--ink3);
+    cursor: pointer; transition: all .15s;
   }
-  .auth-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
   .field { margin-bottom: 16px; }
-  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.3px; }
+  .field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--ink3); margin-bottom: 6px; }
   .field input {
-    width: 100%; padding: 10px 14px; background: var(--ink-3); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px;
-    outline: none; transition: border-color 0.15s;
+    width: 100%; padding: 10px 13px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; outline: none;
+    font-family: 'Syne', sans-serif; font-size: 14px; color: var(--ink);
+    transition: border-color .15s;
   }
-  .field input:focus { border-color: var(--amber-dim); }
+  .field input:focus { border-color: var(--accent2); }
 
-  .submit-btn {
-    width: 100%; padding: 12px; background: var(--amber); border: none; border-radius: 8px;
-    color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: background 0.15s; margin-top: 8px;
+  .btn-submit {
+    width: 100%; padding: 12px;
+    background: var(--accent); color: var(--white); border: none;
+    border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background .15s; margin-top: 6px;
   }
-  .submit-btn:hover { background: #e8a84a; }
-  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-submit:hover { background: #a04d22; }
+  .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
 
-  /* Panels */
-  .panel {
-    position: fixed; inset: 0; background: rgba(13,17,23,0.85); z-index: 100;
+  .form-error { font-size: 12px; color: var(--danger); margin-top: 10px; text-align: center; }
+
+  /* ── Modal / Panel overlay ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(26,23,20,.55);
     display: flex; align-items: center; justify-content: center;
   }
-  .panel-card {
-    width: 540px; background: var(--ink-2); border: 1px solid var(--border);
-    border-radius: 16px; padding: 32px; max-height: 80vh; overflow-y: auto;
+  .modal {
+    width: 520px; max-height: 82vh; overflow-y: auto;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 16px; padding: 36px;
   }
-  .panel-title {
-    font-family: 'Playfair Display', serif; font-size: 20px; color: var(--cream);
-    margin-bottom: 6px;
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px; font-weight: 600; color: var(--ink);
+    margin-bottom: 4px;
   }
-  .panel-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-  .panel-field { margin-bottom: 16px; }
-  .panel-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .panel-field input, .panel-field textarea {
-    width: 100%; padding: 10px 14px; background: var(--ink-3); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px;
-    outline: none; transition: border-color 0.15s; resize: none;
+  .modal-sub { font-size: 12px; color: var(--ink3); margin-bottom: 24px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--ink3); margin-bottom: 5px; }
+  .modal-field input, .modal-field textarea {
+    width: 100%; padding: 10px 13px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; outline: none;
+    font-family: 'Syne', sans-serif; font-size: 14px; color: var(--ink);
+    transition: border-color .15s; resize: none;
   }
-  .panel-field input:focus, .panel-field textarea:focus { border-color: var(--amber-dim); }
-  .panel-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-  .panel-btn-cancel {
-    padding: 9px 18px; background: transparent; border: 1px solid var(--border);
-    border-radius: 7px; color: var(--muted); font-family: 'DM Sans', sans-serif;
-    font-size: 13px; cursor: pointer; transition: all 0.12s;
-  }
-  .panel-btn-cancel:hover { border-color: var(--border-hover); color: var(--cream); }
-  .panel-btn-ok {
-    padding: 9px 18px; background: var(--amber); border: none; border-radius: 7px;
-    color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-    cursor: pointer; transition: background 0.12s;
-  }
-  .panel-btn-ok:hover { background: #e8a84a; }
-  .panel-btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+  .modal-field input:focus, .modal-field textarea:focus { border-color: var(--accent2); }
 
-  .ai-result {
-    background: var(--ink-3); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; font-size: 14px; color: var(--cream); line-height: 1.7; margin-top: 16px;
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel {
+    padding: 9px 18px; background: transparent;
+    border: 1px solid var(--border); border-radius: 7px;
+    font-family: 'Syne', sans-serif; font-size: 13px; color: var(--ink3);
+    cursor: pointer; transition: all .15s;
   }
-  .ai-result-label {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--amber);
-    margin-bottom: 10px; font-weight: 500;
+  .btn-cancel:hover { background: var(--surface); color: var(--ink); }
+  .btn-ok {
+    padding: 9px 18px; background: var(--accent); color: var(--white); border: none;
+    border-radius: 7px; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .15s;
   }
+  .btn-ok:hover { background: #a04d22; }
+  .btn-ok:disabled { opacity: .5; cursor: not-allowed; }
 
-  .error-msg { color: #e74c3c; font-size: 12px; margin-top: 8px; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* AI result box */
+  .ai-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 8px; padding: 16px; margin-top: 16px;
+  }
+  .ai-box-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  .ai-box-text { font-size: 14px; color: var(--ink2); line-height: 1.75; }
+  .ai-box-draft-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; font-weight: 600; color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .ai-sources { font-size: 11px; color: var(--ink3); margin-top: 10px; }
 
-  .note-count { font-size: 11px; color: var(--muted); padding: 8px 20px 4px; }
+  /* spinner */
+  .spin {
+    display: inline-block; width: 13px; height: 13px;
+    border: 2px solid rgba(0,0,0,.12);
+    border-top-color: currentColor;
+    border-radius: 50%; animation: _spin .65s linear infinite;
+  }
+  @keyframes _spin { to { transform: rotate(360deg); } }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 999;
+    padding: 11px 20px; border-radius: 10px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+    animation: _toast-in .2s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  .toast.ok { background: #f0faf4; border: 1px solid #a8dbb8; color: var(--success); }
+  .toast.err { background: #fdf0f0; border: 1px solid #f0b8b8; color: var(--danger); }
+  @keyframes _toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 `;
+document.head.appendChild(style);
 
-// ── API helpers ────────────────────────────────────────────────────────────────
-
-async function apiFetch(path, options = {}, token = null) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Request failed" }));
-    throw new Error(err.detail || "Request failed");
-  }
-  if (res.status === 204) return null;
-  return res.json();
+/* ─── Toast ─────────────────────────────────────────────────────────────────── */
+function Toast({ msg, kind, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
+  return <div className={`toast ${kind}`}>{msg}</div>;
 }
 
-function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+/* ─── Spinner ────────────────────────────────────────────────────────────────── */
+const Spin = () => <span className="spin" />;
 
-// ── Auth Screen ────────────────────────────────────────────────────────────────
-
+/* ─── Auth Screen ────────────────────────────────────────────────────────────── */
 function AuthScreen({ onAuth }) {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [pw, setPw] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isNew, setIsNew] = useState(false);
 
-  async function handleSubmit() {
+  async function submit() {
     setError(""); setLoading(true);
     try {
       if (tab === "register") {
-        await apiFetch("/users/", { method: "POST", body: JSON.stringify({ email, password }) });
+        await api("/users/", { method: "POST", body: JSON.stringify({ email, password: pw }) });
       }
-      const form = new URLSearchParams({ username: email, password });
-      const data = await fetch(`${API_BASE}/login`, { method: "POST", body: form }).then(r => r.json());
-      if (!data.access_token) throw new Error(data.detail || "Login failed");
-      onAuth(data.access_token, email);
+      const { access_token } = await login(email, pw);
+      onAuth(access_token, email);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
 
+  const onKey = (e) => e.key === "Enter" && email && pw && submit();
+
   return (
-    <div className="auth-screen">
-      <div className="auth-bg" />
+    <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo"><span className="logo-dot" />Cloud Notes</div>
-        <div className="auth-sub">Your AI-powered personal notebook</div>
+        <div className="auth-brand"><span className="brand-dot" />Cloud Notes</div>
+        <div className="auth-tagline">Your AI-powered personal notebook</div>
         <div className="auth-tabs">
-          <button className={`auth-tab ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setError(""); }}>Sign in</button>
-          <button className={`auth-tab ${tab === "register" ? "active" : ""}`} onClick={() => { setTab("register"); setError(""); }}>Create account</button>
+          {["login", "register"].map(t => (
+            <button key={t} className={`auth-tab ${tab === t ? "active" : ""}`}
+              onClick={() => { setTab(t); setError(""); }}>
+              {t === "login" ? "Sign in" : "Create account"}
+            </button>
+          ))}
         </div>
         <div className="field">
           <label>Email address</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+          <input type="email" value={email} placeholder="you@example.com"
+            onChange={e => setEmail(e.target.value)} onKeyDown={onKey} autoFocus />
         </div>
         <div className="field">
           <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+          <input type="password" value={pw} placeholder="••••••••"
+            onChange={e => setPw(e.target.value)} onKeyDown={onKey} />
         </div>
-        {error && <div className="error-msg">{error}</div>}
-        <button className="submit-btn" onClick={handleSubmit} disabled={loading || !email || !password}>
-          {loading ? <span className="spinner" /> : tab === "login" ? "Sign in" : "Create account"}
+        {error && <div className="form-error">{error}</div>}
+        <button className="btn-submit" disabled={loading || !email || !pw} onClick={submit}>
+          {loading ? <Spin /> : tab === "login" ? "Sign in" : "Create account"}
         </button>
       </div>
     </div>
   );
 }
 
-// ── Ask Panel ─────────────────────────────────────────────────────────────────
-
-function AskPanel({ token, onClose }) {
-  const [question, setQuestion] = useState("");
+/* ─── Ask Modal ──────────────────────────────────────────────────────────────── */
+function AskModal({ token, onClose }) {
+  const [q, setQ] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleAsk() {
+  async function ask() {
     setError(""); setLoading(true); setResult(null);
     try {
-      const data = await apiFetch("/notes/ask", { method: "POST", body: JSON.stringify({ question }) }, token);
+      const data = await api("/notes/ask", { method: "POST", body: JSON.stringify({ question: q }) }, token);
       setResult(data);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
 
   return (
-    <div className="panel" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="panel-card">
-        <div className="panel-title">✦ Ask your notes</div>
-        <div className="panel-sub">Ask anything — Claude will search across all your notes to answer.</div>
-        <div className="panel-field">
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-title">✦ Ask your notes</div>
+        <div className="modal-sub">Ask a question — Claude searches across all your notes to answer.</div>
+        <div className="modal-field">
           <label>Your question</label>
-          <input value={question} onChange={e => setQuestion(e.target.value)} placeholder="What did I write about the project deadline?" onKeyDown={e => e.key === "Enter" && question && handleAsk()} autoFocus />
+          <input autoFocus value={q} onChange={e => setQ(e.target.value)}
+            placeholder="What did I write about the project deadline?"
+            onKeyDown={e => e.key === "Enter" && q && ask()} />
         </div>
         {result && (
-          <div className="ai-result">
-            <div className="ai-result-label">Answer</div>
-            <div>{result.answer}</div>
+          <div className="ai-box">
+            <div className="ai-box-label">Answer</div>
+            <div className="ai-box-text">{result.answer}</div>
             {result.relevant_note_ids?.length > 0 && (
-              <div style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>
-                Referenced notes: #{result.relevant_note_ids.join(", #")}
-              </div>
+              <div className="ai-sources">Referenced note IDs: {result.relevant_note_ids.join(", ")}</div>
             )}
           </div>
         )}
-        {error && <div className="error-msg">{error}</div>}
-        <div className="panel-actions">
-          <button className="panel-btn-cancel" onClick={onClose}>Close</button>
-          <button className="panel-btn-ok" onClick={handleAsk} disabled={loading || !question}>
-            {loading ? <span className="spinner" /> : "Ask"}
+        {error && <div className="form-error" style={{ textAlign: "left", marginTop: 10 }}>{error}</div>}
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onClose}>Close</button>
+          <button className="btn-ok" disabled={loading || !q} onClick={ask}>
+            {loading ? <Spin /> : "Ask"}
           </button>
         </div>
       </div>
@@ -346,49 +490,63 @@ function AskPanel({ token, onClose }) {
   );
 }
 
-// ── Generate Panel ────────────────────────────────────────────────────────────
-
-function GeneratePanel({ token, onSave, onClose }) {
+/* ─── Generate Modal ─────────────────────────────────────────────────────────── */
+function GenerateModal({ token, onSave, onClose }) {
   const [prompt, setPrompt] = useState("");
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleGenerate() {
+  async function generate() {
     setError(""); setLoading(true); setDraft(null);
     try {
-      const data = await apiFetch("/notes/generate", { method: "POST", body: JSON.stringify({ prompt }) }, token);
+      const data = await api("/notes/generate",
+        { method: "POST", body: JSON.stringify({ prompt }) }, token);
       setDraft(data);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
 
+  async function saveNote() {
+    setSaving(true);
+    try {
+      await onSave(draft);
+      onClose();
+    } catch (e) { setError(e.message); setSaving(false); }
+  }
+
   return (
-    <div className="panel" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="panel-card">
-        <div className="panel-title">✦ Generate a note</div>
-        <div className="panel-sub">Describe what you want to write and Claude will draft it for you.</div>
-        <div className="panel-field">
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-title">✎ Generate a note</div>
+        <div className="modal-sub">Describe what you want to write — Claude will draft it for you.</div>
+        <div className="modal-field">
           <label>Prompt</label>
-          <textarea value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} placeholder="Write a summary of my Q2 goals focusing on growth metrics..." autoFocus />
+          <textarea autoFocus rows={3} value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="Write a summary of my Q2 goals focusing on growth metrics…" />
         </div>
         {draft && (
-          <div className="ai-result">
-            <div className="ai-result-label">Draft</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, marginBottom: 8 }}>{draft.title}</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7 }}>{draft.content}</div>
+          <div className="ai-box">
+            <div className="ai-box-label">Draft preview</div>
+            <div className="ai-box-draft-title">{draft.title}</div>
+            <div className="ai-box-text">{draft.content}</div>
           </div>
         )}
-        {error && <div className="error-msg">{error}</div>}
-        <div className="panel-actions">
-          <button className="panel-btn-cancel" onClick={onClose}>Cancel</button>
+        {error && <div className="form-error" style={{ textAlign: "left", marginTop: 10 }}>{error}</div>}
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onClose}>Cancel</button>
           {!draft
-            ? <button className="panel-btn-ok" onClick={handleGenerate} disabled={loading || !prompt}>
-                {loading ? <span className="spinner" /> : "Generate"}
+            ? <button className="btn-ok" disabled={loading || !prompt} onClick={generate}>
+                {loading ? <Spin /> : "Generate"}
               </button>
-            : <button className="panel-btn-ok" onClick={() => { onSave(draft); onClose(); }}>
-                Save as note
-              </button>
+            : <>
+                <button className="btn-cancel" onClick={() => setDraft(null)}>Regenerate</button>
+                <button className="btn-ok" disabled={saving} onClick={saveNote}>
+                  {saving ? <Spin /> : "Save as note"}
+                </button>
+              </>
           }
         </div>
       </div>
@@ -396,215 +554,320 @@ function GeneratePanel({ token, onSave, onClose }) {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
-
-export default function App() {
-  const [token, setToken] = useState(() => sessionStorage.getItem("cn_token") || "");
-  const [userEmail, setUserEmail] = useState(() => sessionStorage.getItem("cn_email") || "");
-  const [notes, setNotes] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [dirty, setDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("");
-  const [panel, setPanel] = useState(null); // "ask" | "generate" | null
-  const [aiLoading, setAiLoading] = useState("");
+/* ─── Summarise Modal ────────────────────────────────────────────────────────── */
+function SummariseModal({ token, noteId, onClose }) {
+  const [summary, setSummary] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  function onAuth(t, email) {
-    setToken(t); setUserEmail(email);
-    sessionStorage.setItem("cn_token", t);
-    sessionStorage.setItem("cn_email", email);
-  }
+  useEffect(() => {
+    api(`/notes/${noteId}/summarise`, { method: "POST" }, token)
+      .then(d => setSummary(d.summary))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
 
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-title">◈ Note summary</div>
+        <div className="modal-sub">AI-generated summary of this note.</div>
+        {loading && <div style={{ textAlign: "center", padding: "24px 0" }}><Spin /></div>}
+        {summary && (
+          <div className="ai-box">
+            <div className="ai-box-label">Summary</div>
+            <div className="ai-box-text">{summary}</div>
+          </div>
+        )}
+        {error && <div className="form-error" style={{ textAlign: "left", marginTop: 10 }}>{error}</div>}
+        <div className="modal-actions">
+          <button className="btn-ok" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main App ───────────────────────────────────────────────────────────────── */
+export default function App() {
+  /* auth */
+  const [token, setToken] = useState(() => localStorage.getItem("cn_token") || "");
+  const [email, setEmail]  = useState(() => localStorage.getItem("cn_email") || "");
+
+  /* notes */
+  const [notes, setNotes]       = useState([]);
+  const [selected, setSelected] = useState(null); // note object or null
+  const [isNew, setIsNew]       = useState(false); // true when editing blank new note
+
+  /* editor */
+  const [title,   setTitle]   = useState("");
+  const [content, setContent] = useState("");
+  const [dirty,   setDirty]   = useState(false);
+
+  /* ui state */
+  const [modal,     setModal]     = useState(null); // "ask"|"generate"|"summarise"|null
+  const [tagLoading, setTagLoading] = useState(false);
+  const [toast,     setToast]     = useState(null); // {msg, kind}
+  const [saving,    setSaving]    = useState(false);
+  const [toolbarErr, setToolbarErr] = useState("");
+
+  const titleRef = useRef(null);
+
+  /* ── auth ── */
+  function onAuth(tok, em) {
+    setToken(tok); setEmail(em);
+    localStorage.setItem("cn_token", tok);
+    localStorage.setItem("cn_email", em);
+  }
   function logout() {
-    sessionStorage.clear(); setToken(""); setUserEmail("");
-    setNotes([]); setSelected(null);
+    localStorage.clear();
+    setToken(""); setEmail("");
+    setNotes([]); setSelected(null); setIsNew(false);
+    setTitle(""); setContent(""); setDirty(false);
   }
 
+  /* ── load notes ── */
   const loadNotes = useCallback(async () => {
     try {
-      const data = await apiFetch("/notes/?limit=100", {}, token);
+      const data = await api("/notes/?limit=100", {}, token);
       setNotes(data.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
-    } catch (e) { if (e.message.includes("401")) logout(); }
+    } catch (e) {
+      if (e.message.toLowerCase().includes("401") || e.message.toLowerCase().includes("credential")) logout();
+    }
   }, [token]);
 
   useEffect(() => { if (token) loadNotes(); }, [token]);
 
+  /* ── select existing note ── */
   function selectNote(note) {
-    setSelected(note); setTitle(note.title); setContent(note.content); setDirty(false); setError(""); setIsNew(false);
+    setSelected(note); setIsNew(false);
+    setTitle(note.title); setContent(note.content);
+    setDirty(false); setToolbarErr("");
   }
 
-  function newNote() {
-    setSelected(null); setTitle(""); setContent(""); setDirty(false); setError("");
+  /* ── new note ── */
+  function startNewNote() {
+    setSelected(null); setIsNew(true);
+    setTitle(""); setContent("");
+    setDirty(false); setToolbarErr("");
+    setTimeout(() => titleRef.current?.focus(), 50);
   }
 
+  /* ── save (create or update) ── */
   async function saveNote() {
-    setError("");
-    const body = JSON.stringify({ title: title || "Untitled", content });
+    if (!title.trim() && !content.trim()) {
+      setToolbarErr("Add a title or content before saving.");
+      return;
+    }
+    setToolbarErr(""); setSaving(true);
+    const body = JSON.stringify({ title: title.trim() || "Untitled", content: content.trim() });
     try {
       if (selected) {
-        const updated = await apiFetch(`/notes/${selected.id}`, { method: "PUT", body }, token);
+        // UPDATE  PUT /notes/{id}
+        const updated = await api(`/notes/${selected.id}`, { method: "PUT", body }, token);
         setSelected(updated);
-        setNotes(prev => prev.map(n => n.id === updated.id ? updated : n).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
+        setTitle(updated.title); setContent(updated.content);
+        setNotes(prev =>
+          prev.map(n => n.id === updated.id ? updated : n)
+              .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+        );
       } else {
-        const created = await apiFetch("/notes/", { method: "POST", body }, token);
-        setSelected(created); setTitle(created.title); setContent(created.content);
+        // CREATE  POST /notes/
+        const created = await api("/notes/", { method: "POST", body }, token);
+        setSelected(created); setIsNew(false);
+        setTitle(created.title); setContent(created.content);
         setNotes(prev => [created, ...prev]);
       }
-      setIsNew(false); // add this
-      setDirty(false); setSaveStatus("Saved"); setTimeout(() => setSaveStatus(""), 2000);
-    } catch (e) { setError(e.message); }
+      setDirty(false);
+      showToast("Saved", "ok");
+    } catch (e) { setToolbarErr(e.message); }
+    finally { setSaving(false); }
   }
 
+  /* ── delete ── */
   async function deleteNote() {
-    if (!selected || !window.confirm("Delete this note?")) return;
-    await apiFetch(`/notes/${selected.id}`, { method: "DELETE" }, token);
-    setNotes(prev => prev.filter(n => n.id !== selected.id));
-    newNote();
-  }
-
-  async function summariseNote() {
     if (!selected) return;
-    setAiLoading("summarise");
+    if (!window.confirm(`Delete "${selected.title}"? This cannot be undone.`)) return;
     try {
-      const data = await apiFetch(`/notes/${selected.id}/summarise`, { method: "POST" }, token);
-      alert(`Summary:\n\n${data.summary}`);
-    } catch (e) { setError(e.message); }
-    finally { setAiLoading(""); }
+      await api(`/notes/${selected.id}`, { method: "DELETE" }, token);
+      setNotes(prev => prev.filter(n => n.id !== selected.id));
+      setSelected(null); setIsNew(false);
+      setTitle(""); setContent(""); setDirty(false);
+      showToast("Note deleted", "ok");
+    } catch (e) { showToast(e.message, "err"); }
   }
 
-  async function tagNote() {
+  /* ── auto-tag ── */
+  async function autoTag() {
     if (!selected) return;
-    setAiLoading("tag");
+    setTagLoading(true);
     try {
-      const data = await apiFetch(`/notes/${selected.id}/tags`, { method: "POST" }, token);
-      setSelected(prev => ({ ...prev, tags: data.tags }));
-      setNotes(prev => prev.map(n => n.id === selected.id ? { ...n, tags: data.tags } : n));
-    } catch (e) { setError(e.message); }
-    finally { setAiLoading(""); }
+      // POST /notes/{id}/tags
+      const data = await api(`/notes/${selected.id}/tags`, { method: "POST" }, token);
+      const updated = { ...selected, tags: data.tags };
+      setSelected(updated);
+      setNotes(prev => prev.map(n => n.id === selected.id ? updated : n));
+      showToast(`Tagged: ${data.tags.join(", ")}`, "ok");
+    } catch (e) { showToast(e.message, "err"); }
+    finally { setTagLoading(false); }
   }
 
-  async function saveGeneratedNote(draft) {
+  /* ── save generated draft ── */
+  async function saveGenerated(draft) {
     const body = JSON.stringify({ title: draft.title, content: draft.content });
-    const created = await apiFetch("/notes/", { method: "POST", body }, token);
+    const created = await api("/notes/", { method: "POST", body }, token);
     setNotes(prev => [created, ...prev]);
     selectNote(created);
+    showToast("Note created from draft", "ok");
   }
 
-  if (!token) return (
-    <>
-      <style>{fonts}{css}</style>
-      <AuthScreen onAuth={onAuth} />
-    </>
-  );
+  /* ── toast helper ── */
+  function showToast(msg, kind) {
+    setToast({ msg, kind });
+  }
+
+  /* ── editor visible ── */
+  const editorVisible = isNew || selected !== null;
+
+  if (!token) return <AuthScreen onAuth={onAuth} />;
 
   return (
-    <>
-      <style>{fonts}{css}</style>
-      <div className="app">
+    <div className="app">
 
-        {/* Sidebar */}
-        <div className="sidebar">
-          <div className="sidebar-header">
-            <div className="logo"><span className="logo-dot" />Cloud Notes</div>
-            <div className="sidebar-user">{userEmail}</div>
-          </div>
-
-          <button className="new-note-btn" onClick={newNote}>
-            <span style={{ fontSize: 16 }}>+</span> New note
-          </button>
-
-          <div className="ai-actions">
-            <div className="ai-actions-label">AI Tools</div>
-            <button className="ai-btn" onClick={() => setPanel("ask")}>
-              <span className="ai-btn-icon">✦</span> Ask my notes
-            </button>
-            <button className="ai-btn" onClick={() => setPanel("generate")}>
-              <span className="ai-btn-icon">✎</span> Generate a note
-            </button>
-            {selected && (
-              <>
-                <button className="ai-btn" onClick={summariseNote} disabled={!!aiLoading}>
-                  <span className="ai-btn-icon">◈</span>
-                  {aiLoading === "summarise" ? <span className="spinner" /> : "Summarise note"}
-                </button>
-                <button className="ai-btn" onClick={tagNote} disabled={!!aiLoading}>
-                  <span className="ai-btn-icon">◇</span>
-                  {aiLoading === "tag" ? <span className="spinner" /> : "Auto-tag note"}
-                </button>
-              </>
-            )}
-          </div>
-
-          {notes.length > 0 && <div className="note-count">{notes.length} note{notes.length !== 1 ? "s" : ""}</div>}
-
-          <div className="note-list">
-            {notes.map(note => (
-              <div key={note.id} className={`note-item ${selected?.id === note.id ? "active" : ""}`} onClick={() => selectNote(note)}>
-                <div className="note-item-title">{note.title || "Untitled"}</div>
-                <div className="note-item-preview">{note.content}</div>
-                {note.tags?.length > 0 && (
-                  <div className="note-tags">
-                    {note.tags.slice(0, 3).map(t => <span key={t} className="tag">{t}</span>)}
-                  </div>
-                )}
-                <div className="note-item-date">{fmtDate(note.updated_at)}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
-            <button className="ai-btn" style={{ width: "100%", justifyContent: "center", color: "var(--muted)" }} onClick={logout}>
-              Sign out
-            </button>
-          </div>
+      {/* ── Sidebar ── */}
+      <div className="sidebar">
+        <div className="sidebar-top">
+          <div className="brand"><span className="brand-dot" />Cloud Notes</div>
+          <div className="user-email">{email}</div>
         </div>
 
-        {/* Editor */}
-        <div className="main">
-           {selected !== null || title || content || isNew ? (
-            <>
-              <div className="toolbar">
-                <button className="toolbar-btn primary" onClick={saveNote}>Save</button>
-                {selected && (
-                  <button className="toolbar-btn danger" onClick={deleteNote}>Delete</button>
-                )}
-                <div className="toolbar-spacer" />
-                {error && <span className="error-msg">{error}</span>}
-                {saveStatus && <span className="save-status">{saveStatus}</span>}
-                {dirty && !saveStatus && <span className="save-status">Unsaved changes</span>}
-              </div>
-              <div className="editor-area">
-                <textarea
-                  className="editor-title"
-                  value={title}
-                  onChange={e => { setTitle(e.target.value); setDirty(true); }}
-                  placeholder="Note title"
-                  rows={1}
-                  onInput={e => { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
-                />
-                <textarea
-                  className="editor-content"
-                  value={content}
-                  onChange={e => { setContent(e.target.value); setDirty(true); }}
-                  placeholder="Start writing…"
-                />
-              </div>
-            </>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">✦</div>
-              <div className="empty-state-title">Nothing selected</div>
-              <div className="empty-state-sub">Choose a note or create a new one</div>
-            </div>
+        <div className="sidebar-actions">
+          {/* POST /notes/ */}
+          <button className="btn-new" onClick={startNewNote}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> New note
+          </button>
+
+          <div className="ai-section-label" style={{ padding: "10px 0 4px" }}>AI tools</div>
+
+          {/* POST /notes/ask */}
+          <button className="btn-ai" onClick={() => setModal("ask")}>
+            <span className="btn-ai-icon">✦</span> Ask my notes
+          </button>
+
+          {/* POST /notes/generate */}
+          <button className="btn-ai" onClick={() => setModal("generate")}>
+            <span className="btn-ai-icon">✎</span> Generate a note
+          </button>
+
+          {/* POST /notes/{id}/summarise — only when a saved note is open */}
+          {selected && (
+            <button className="btn-ai" onClick={() => setModal("summarise")}>
+              <span className="btn-ai-icon">◈</span> Summarise this note
+            </button>
+          )}
+
+          {/* POST /notes/{id}/tags — only when a saved note is open */}
+          {selected && (
+            <button className="btn-ai" onClick={autoTag} disabled={tagLoading}>
+              <span className="btn-ai-icon">◇</span>
+              {tagLoading ? <><Spin /> Tagging…</> : "Auto-tag this note"}
+            </button>
           )}
         </div>
 
-        {/* Panels */}
-        {panel === "ask" && <AskPanel token={token} onClose={() => setPanel(null)} />}
-        {panel === "generate" && <GeneratePanel token={token} onSave={saveGeneratedNote} onClose={() => setPanel(null)} />}
+        {/* Note list  GET /notes/ */}
+        <div className="note-count">{notes.length} note{notes.length !== 1 ? "s" : ""}</div>
+        <div className="note-list">
+          {notes.length === 0
+            ? <div className="note-empty-list">No notes yet.<br />Create your first one!</div>
+            : notes.map(n => (
+              <div key={n.id}
+                className={`note-card ${selected?.id === n.id ? "active" : ""}`}
+                onClick={() => selectNote(n)}>
+                <div className="note-card-title">{n.title || "Untitled"}</div>
+                <div className="note-card-preview">{n.content}</div>
+                {n.tags?.length > 0 && (
+                  <div className="note-tags" style={{ marginBottom: 5 }}>
+                    {n.tags.slice(0, 4).map(t => <span key={t} className="tag">{t}</span>)}
+                  </div>
+                )}
+                <div className="note-card-meta">
+                  <span className="note-card-date">{fmtDate(n.updated_at)}</span>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <div className="sidebar-bottom">
+          <button className="btn-logout" onClick={logout}>Sign out</button>
+        </div>
       </div>
-    </>
+
+      {/* ── Editor ── */}
+      <div className="main">
+        {editorVisible ? (
+          <>
+            {/* Toolbar */}
+            <div className="toolbar">
+              {/* Save: POST /notes/ or PUT /notes/{id} */}
+              <button className="btn-toolbar save" onClick={saveNote} disabled={saving}>
+                {saving ? <Spin /> : "Save"}
+              </button>
+
+              {/* Delete: DELETE /notes/{id} */}
+              {selected && (
+                <button className="btn-toolbar danger" onClick={deleteNote}>
+                  Delete
+                </button>
+              )}
+
+              <div className="toolbar-gap" />
+
+              {toolbarErr && <span className="toolbar-error">{toolbarErr}</span>}
+              {dirty && !toolbarErr && <span className="toolbar-status">Unsaved changes</span>}
+              {selected && !dirty && (
+                <span className="toolbar-status">Last saved {fmtDate(selected.updated_at)}</span>
+              )}
+            </div>
+
+            {/* Editor body */}
+            <div className="editor-wrap">
+              <textarea
+                ref={titleRef}
+                className="editor-title-input"
+                rows={1}
+                value={title}
+                placeholder="Note title"
+                onChange={e => { setTitle(e.target.value); setDirty(true); }}
+                onInput={e => { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
+              />
+              <textarea
+                className="editor-body-input"
+                value={content}
+                placeholder="Start writing…"
+                onChange={e => { setContent(e.target.value); setDirty(true); }}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="empty-editor">
+            <div className="empty-editor-glyph">✦</div>
+            <div className="empty-editor-title">Nothing open</div>
+            <div className="empty-editor-sub">Select a note or create a new one</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Modals ── */}
+      {modal === "ask"       && <AskModal      token={token} onClose={() => setModal(null)} />}
+      {modal === "generate"  && <GenerateModal token={token} onSave={saveGenerated} onClose={() => setModal(null)} />}
+      {modal === "summarise" && selected && (
+        <SummariseModal token={token} noteId={selected.id} onClose={() => setModal(null)} />
+      )}
+
+      {/* ── Toast ── */}
+      {toast && <Toast msg={toast.msg} kind={toast.kind} onDone={() => setToast(null)} />}
+    </div>
   );
 }
