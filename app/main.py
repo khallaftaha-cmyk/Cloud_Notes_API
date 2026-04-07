@@ -17,10 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(ai.router)
 app.include_router(note.router)
 app.include_router(user.router)
 app.include_router(auth.router)
-app.include_router(ai.router)
 
 
 @app.get("/health", tags=["Health"])
