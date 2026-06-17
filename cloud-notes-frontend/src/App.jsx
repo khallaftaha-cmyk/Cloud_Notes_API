@@ -561,7 +561,7 @@ function SummariseModal({ token, noteId, onClose }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api(`/notes/${noteId}/summarise`, { method: "POST" }, token)
+    api(`/notes/${noteId}/summarize`, { method: "POST" }, token)
       .then(d => setSummary(d.summary))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));

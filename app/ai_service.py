@@ -8,11 +8,12 @@ import json
 from typing import List
 from . import models
 import anthropic
+from .config import settings
 
 # Initialise once — reads ANTHROPIC_API_KEY from environment automatically
-_client = anthropic.Anthropic()
+_client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-3-5-sonnet-latest"
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

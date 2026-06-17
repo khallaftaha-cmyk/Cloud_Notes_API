@@ -35,7 +35,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def read_user(
     id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(oauth2.get_current_user),  # FIX: now requires auth
+    current_user: models.User = Depends(oauth2.get_current_user),
 ):
     if id != current_user.id:
         raise HTTPException(
