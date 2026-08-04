@@ -7,13 +7,13 @@ Kept separate from routing so logic is reusable and easy to test.
 import json
 from typing import List
 from . import models
-import anthropic
 from .config import settings
+import anthropic
 
-# Initialise once — reads ANTHROPIC_API_KEY from environment automatically
+# Initialise once — explicitly pass the API key from settings
 _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-MODEL = "claude-3-5-sonnet-latest"
+MODEL = "claude-3-5-sonnet-20241022"
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
