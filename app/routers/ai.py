@@ -1,11 +1,12 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
 from . import oauth2
 from .. import ai_service
+from ..limiter import limiter
 
 router = APIRouter(
     prefix="/notes",
@@ -13,9 +14,11 @@ router = APIRouter(
 )
 
 @router.post("/{id}/summarize", response_model=schemas.NoteSummaryResponse)
+@limiter.limit("10/minute")
 def summarize_note(
+    request: Request,
     id: int,
-    db:Session = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
     note = _get_owned_note(id, current_user, db)
@@ -23,8 +26,10 @@ def summarize_note(
     return schemas.NoteSummaryResponse(note_id=id, summary=summary)
 
 @router.post("/{id}/tags", response_model=schemas.NoteTagsResponse)
+@limiter.limit("10/minute")
 def tag_note(
-    id:int,
+    request: Request,
+    id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
@@ -45,13 +50,15 @@ def tag_note(
     return schemas.NoteTagsResponse(note_id=id, tags=tags)
 
 @router.post("/generate", response_model=schemas.NoteGenerateResponse)
+@limiter.limit("10/minute")
 def generate_note(
-    request: schemas.NoteGenerateRequest,
+    request: Request,
+    req_body: schemas.NoteGenerateRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
-        draft = ai_service.generate_note_draft(request.prompt, request.title)
+        draft = ai_service.generate_note_draft(req_body.prompt, req_body.title)
     except:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -62,8 +69,10 @@ def generate_note(
 
 
 @router.post("/ask", response_model=schemas.NoteAskResponse)
+@limiter.limit("10/minute")
 def ask_notes(
-    request: schemas.NoteAskRequest,
+    request: Request,
+    req_body: schemas.NoteAskRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
@@ -71,7 +80,7 @@ def ask_notes(
         db.query(models.Note)
         .filter(models.Note.owner_id == current_user.id).all()
     )
-    result = ai_service.ask_notes(request.question, notes)
+    result = ai_service.ask_notes(req_body.question, notes)
     return schemas.NoteAskResponse(**result)
 
 

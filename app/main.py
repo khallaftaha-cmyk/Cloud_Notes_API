@@ -1,11 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from . import models
 from .database import engine
 from .routers import note, user, auth, ai
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from .limiter import limiter
 
 
 app = FastAPI(title="Cloud Notes API", version="1.0.0")
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = ["*"]
 
