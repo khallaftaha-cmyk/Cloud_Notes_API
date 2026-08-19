@@ -6,8 +6,7 @@ FONTS.rel = "stylesheet";
 FONTS.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600&display=swap";
 document.head.appendChild(FONTS);
 
-/* ─── API ───────────────────────────────────────────────────────────────────── */
-const BASE = "http://127.0.0.1:8000";
+const BASE = import.meta.env.VITE_API_BASE_URL || "https://16.16.110.208.sslip.io";
 
 async function api(path, opts = {}, token = null) {
   const headers = { "Content-Type": "application/json" };

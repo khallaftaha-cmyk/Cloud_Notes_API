@@ -23,5 +23,5 @@ class Note(Base):
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
                     server_default=text("now()"), server_onupdate=FetchedValue())
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     owner = relationship("User")
