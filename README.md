@@ -23,16 +23,16 @@ Try out the live endpoints directly in your browser:
 ## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    Client([Client / Web Browser]) -->|HTTPS / Port 443| Nginx[Nginx Reverse Proxy & SSL]
-    Nginx -->|HTTP / Port 8000| FastAPI[FastAPI Container + slowapi Rate Limiter]
-    
-    subgraph Docker Stack
-        FastAPI -->|SQLAlchemy ORM| DB[(PostgreSQL 15 Container)]
-        FastAPI -->|Alembic| Migrations[Auto Schema Migrations]
+flowchart TD
+    Client["Client / Web Browser"] -->|"HTTPS (Port 443)"| Nginx["Nginx Reverse Proxy & SSL"]
+    Nginx -->|"HTTP (Port 8000)"| FastAPI["FastAPI App (with Rate Limiter)"]
+
+    subgraph DockerStack ["Docker Container Environment"]
+        FastAPI -->|"SQLAlchemy ORM"| DB[("PostgreSQL 15 Database")]
+        FastAPI -->|"Auto Migrations"| Migrations["Alembic Engine"]
     end
-    
-    FastAPI -->|Async HTTP| Claude[Anthropic Claude 3.5 Sonnet API]
+
+    FastAPI -->|"Async HTTP"| Claude["Anthropic Claude 3.5 Sonnet API"]
 ```
 
 ---
