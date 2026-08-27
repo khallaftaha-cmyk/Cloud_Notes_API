@@ -10,16 +10,27 @@ from app.database import Base, get_db
 from app.routers.oauth2 import create_access_token
 from app import models
 
+import os
+
 # Teach SQLAlchemy how to handle PostgreSQL ARRAY type when compiling for SQLite in tests
 @compiles(ARRAY, "sqlite")
 def compile_array_sqlite(type_, compiler, **kw):
     return "TEXT"
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+DB_HOSTNAME = os.getenv("DATABASE_HOSTNAME")
+if DB_HOSTNAME:
+    DB_PORT = os.getenv("DATABASE_PORT", "5432")
+    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "testpassword")
+    DB_NAME = os.getenv("DATABASE_NAME", "testdb")
+    DB_USERNAME = os.getenv("DATABASE_USERNAME", "postgres")
+    SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/{DB_NAME}"
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
