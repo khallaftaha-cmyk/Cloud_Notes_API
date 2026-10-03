@@ -1,5 +1,6 @@
 # Cloud Notes API: Production-Ready Cloud & AI Architecture
-[![Live API Docs](https://img.shields.io/badge/Live_API_Docs-HTTPS_Active-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://16.16.110.208.sslip.io/docs)
+[![Live Web App](https://img.shields.io/badge/Live_Web_App-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://cloud-notes-icdohjqkz-taki25.vercel.app)
+[![Live API Docs](https://img.shields.io/badge/Live_API_Docs-Render_Active-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://cloud-notes-api-2wmg.onrender.com/docs)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?style=for-the-badge&logo=postgresql&logoColor=white)
@@ -12,11 +13,12 @@ The **Cloud Notes API** is a high-performance, containerized backend application
 
 ---
 
-## 🔗 Live Interactive API Documentation
-Try out the live endpoints directly in your browser:
-* **Interactive Swagger UI (HTTPS):** [https://16.16.110.208.sslip.io/docs](https://16.16.110.208.sslip.io/docs)
-* **ReDoc OpenAPI Documentation:** [https://16.16.110.208.sslip.io/redoc](https://16.16.110.208.sslip.io/redoc)
-* **Health Check:** `https://16.16.110.208.sslip.io/health`
+## 🔗 Live Interactive Links
+Try out the live frontend application and API documentation directly in your browser:
+* **Live Web App (Frontend):** [https://cloud-notes-icdohjqkz-taki25.vercel.app](https://cloud-notes-icdohjqkz-taki25.vercel.app)
+* **Interactive Swagger UI (HTTPS):** [https://cloud-notes-api-2wmg.onrender.com/docs](https://cloud-notes-api-2wmg.onrender.com/docs)
+* **ReDoc OpenAPI Documentation:** [https://cloud-notes-api-2wmg.onrender.com/redoc](https://cloud-notes-api-2wmg.onrender.com/redoc)
+* **Health Check:** `https://cloud-notes-api-2wmg.onrender.com/health`
 
 ---
 
