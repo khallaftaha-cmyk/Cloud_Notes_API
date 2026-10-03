@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -11,7 +12,14 @@ from app.config import settings
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", f'postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}')
+
+# Cloud platforms (Render, Neon) provide DATABASE_URL directly.
+# Fall back to building from individual vars for local development.
+db_url = os.environ.get("DATABASE_URL") or (
+    f'postgresql://{settings.database_username}:{settings.database_password}'
+    f'@{settings.database_hostname}:{settings.database_port}/{settings.database_name}'
+)
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
