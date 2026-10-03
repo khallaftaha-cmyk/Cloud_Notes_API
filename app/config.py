@@ -1,12 +1,14 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 
 
 class Settings(BaseSettings):
-    database_hostname: str
-    database_port: str
-    database_password: str
-    database_name: str
-    database_username: str
+    # Individual DB vars (used locally). On cloud platforms use DATABASE_URL instead.
+    database_hostname: Optional[str] = None
+    database_port: Optional[str] = None
+    database_password: Optional[str] = None
+    database_name: Optional[str] = None
+    database_username: Optional[str] = None
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
